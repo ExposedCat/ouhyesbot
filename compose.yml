@@ -17,8 +17,8 @@ services:
       DENO_DIR: /data/deno
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://signoz-ingester:4318}
     volumes:
-      - ./bot.ts:/app/bot.ts:ro
-      - ./oh-yeah.ogg:/app/oh-yeah.ogg:ro
+      - ./bot.ts:/app/bot.ts:ro,Z
+      - ./oh-yeah.ogg:/app/oh-yeah.ogg:ro,Z
       - bot-data:/data
     entrypoint: ["/bin/sh", "-ec"]
     command:
