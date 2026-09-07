@@ -18,18 +18,21 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://signoz-ingester:4318}
     volumes:
       - ./bot.ts:/app/bot.ts:ro
+      - ./oh-yeah.ogg:/app/oh-yeah.ogg:ro
       - bot-data:/data
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
-        # File IDs belong to a bot; keep a separate cache for each bot ID.
-        voice_cache="/data/voice-$${BOT_TOKEN%%:*}"
+        # Cache by bot and audio content so replacing the file triggers an upload.
+        voice_hash=$$(sha256sum oh-yeah.ogg)
+        voice_hash=$${voice_hash%% *}
+        voice_cache="/data/voice-$${BOT_TOKEN%%:*}-$$voice_hash"
         if [ -z "$$VOICE_FILE_ID" ] && [ -s "$$voice_cache" ]; then
           VOICE_FILE_ID=$$(cat "$$voice_cache")
         fi
         if [ -z "$$VOICE_FILE_ID" ]; then
           : "$${UPLOAD_CHAT_ID:?Set UPLOAD_CHAT_ID in .env for the first upload}"
-          echo "Uploading the embedded voice to the configured chat..."
+          echo "Uploading oh-yeah.ogg to the configured chat..."
           uploaded=$$(deno run --no-lock --allow-env --allow-net --allow-read --allow-sys bot.ts --upload "$$UPLOAD_CHAT_ID")
           case "$$uploaded" in
             VOICE_FILE_ID=?*) VOICE_FILE_ID=$${uploaded#VOICE_FILE_ID=} ;;
