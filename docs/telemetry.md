@@ -48,7 +48,6 @@ Create these dashboard variables, following `context-tg`:
 The queries use the dashboard time range, time-bounded resource fingerprints,
 and an explicit `event_type` filter to count only voice send events.
 
-The voice source is `oh-yeah.ogg` in the repository. Compose caches its Telegram
-file ID by bot ID and audio checksum, so replacing the audio uploads the new
-version on the next startup. Remove any explicit `VOICE_FILE_ID` from `.env` to
-use this automatic upload; `UPLOAD_CHAT_ID` must be set.
+Compose starts the bot directly. Set `BOT_TOKEN` and `VOICE_FILE_ID` in `.env`.
+It does not check, hash, or upload the audio. The `--upload CHAT_ID` command
+remains available for manual setup.

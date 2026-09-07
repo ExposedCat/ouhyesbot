@@ -1,7 +1,4 @@
-# Set BOT_TOKEN and UPLOAD_CHAT_ID in .env, then: docker compose up -d
-# Start the bot's private chat first; UPLOAD_CHAT_ID is your numeric chat ID.
-# Enable Inline Mode and Guest Mode in @BotFather (these are manual settings).
-# An existing VOICE_FILE_ID in .env skips the upload.
+# Set BOT_TOKEN and VOICE_FILE_ID in .env, then: docker compose up -d
 services:
   bot:
     image: denoland/deno:2.9.6
@@ -12,7 +9,6 @@ services:
       - .env
     environment:
       BOT_TOKEN: ${BOT_TOKEN:?Set BOT_TOKEN in .env}
-      UPLOAD_CHAT_ID: ${UPLOAD_CHAT_ID:-}
       VOICE_FILE_ID: ${VOICE_FILE_ID:-}
       DENO_DIR: /data/deno
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://signoz-ingester:4318}
@@ -20,29 +16,15 @@ services:
       - ./bot.ts:/app/bot.ts:ro,Z
       - ./oh-yeah.ogg:/app/oh-yeah.ogg:ro,Z
       - bot-data:/data
-    entrypoint: ["/bin/sh", "-ec"]
+    entrypoint: ["deno"]
     command:
-      - |
-        # Cache by bot and audio content so replacing the file triggers an upload.
-        voice_hash=$$(sha256sum oh-yeah.ogg)
-        voice_hash=$${voice_hash%% *}
-        voice_cache="/data/voice-$${BOT_TOKEN%%:*}-$$voice_hash"
-        if [ -z "$$VOICE_FILE_ID" ] && [ -s "$$voice_cache" ]; then
-          VOICE_FILE_ID=$$(cat "$$voice_cache")
-        fi
-        if [ -z "$$VOICE_FILE_ID" ]; then
-          : "$${UPLOAD_CHAT_ID:?Set UPLOAD_CHAT_ID in .env for the first upload}"
-          echo "Uploading oh-yeah.ogg to the configured chat..."
-          uploaded=$$(deno run --no-lock --allow-env --allow-net --allow-read --allow-sys bot.ts --upload "$$UPLOAD_CHAT_ID")
-          case "$$uploaded" in
-            VOICE_FILE_ID=?*) VOICE_FILE_ID=$${uploaded#VOICE_FILE_ID=} ;;
-            *) echo "Upload did not return a voice file ID" >&2; exit 1 ;;
-          esac
-          printf '%s\n' "$$VOICE_FILE_ID" > "$$voice_cache.tmp"
-          mv "$$voice_cache.tmp" "$$voice_cache"
-        fi
-        export VOICE_FILE_ID
-        exec deno run --no-lock --allow-env --allow-net --allow-read --allow-sys bot.ts
+      - run
+      - --no-lock
+      - --allow-env
+      - --allow-net
+      - --allow-read
+      - --allow-sys
+      - bot.ts
     networks:
       - dev-infra
 
